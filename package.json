@@ -7,7 +7,7 @@
     "start": "node dist/app.js",
     "start-dev": "nodemon --inspect dist/app.js",
     "watch-dev": "tsc -w",
-    "build": "tsc"
+    "build": "tsc dist/app.js"
   },
   "author": "",
   "license": "ISC",
