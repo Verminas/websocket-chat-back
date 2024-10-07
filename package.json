@@ -7,12 +7,13 @@
     "start": "node dist/app.js",
     "start-dev": "nodemon --inspect dist/app.js",
     "watch-dev": "tsc -w",
-    "build": "tsc dist/app.js"
+    "build": "tsc"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
     "@types/express": "^5.0.0",
+    "cors": "^2.8.5",
     "express": "^4.21.0",
     "nodemon": "^3.1.7",
     "socket.io": "^4.8.0",
