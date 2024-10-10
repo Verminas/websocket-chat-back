@@ -6,20 +6,15 @@ import cors from 'cors'
 const PORT = process.env.PORT || 3009;
 const initialMessagesData: Message[] = [{
   id: 1,
-  name: 'Alex',
+  userName: 'Alex',
   message: 'Hello, how are you7'
-}, {id: 2, name: 'Max', message: 'Do you watch a Harry Potter film?'}]
+}, {id: 2, userName: 'Max', message: 'Do you watch a Harry Potter film?'}]
+const currentUsers = new Map()
 
 const app = express();
 
 app.use(cors()); // Разрешить CORS для всех запросов
 
-// app.use((req, res, next) => {
-//   res.setHeader('Access-Control-Allow-Origin', '*');
-//   res.setHeader('Access-Control-Allow-Methods', 'GET, POST');
-//   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-//   next();
-// });
 
 const server = createServer(app);
 
@@ -27,8 +22,6 @@ const io = new Server(server, {
   cors: {
     origin: "*",
     methods: ["GET", "POST"],
-    // allowedHeaders: ["my-custom-header"],
-    // credentials: true
   }
 });
 
@@ -38,17 +31,33 @@ app.get('/', (req: Request, res: Response) => {
 
 io.on('connection', (socket) => {
   console.log('a user connected');
+  currentUsers.set(socket, {userName: 'anonym', id: socket.id});
+
   socket.emit('get-data', initialMessagesData)
 
-  socket.on('send-message', (data) => {
+  socket.on('get-name', (data: {userName: string}) => {
+    const user = currentUsers.get(socket)
+    user.userName = data.userName
+    io.emit('user-go-in', {userName: data.userName});
+  })
+
+  socket.on('send-message', (data: GetMessage) => {
     console.log(data);
-    const message = {message: data, name: 'Julia', id: Date.now()}
+    const message = {message: data.message, userName: data.userName, id: Date.now()}
     initialMessagesData.push(message);
     io.emit('get-message', message)
   })
 
 
+  socket.on('disconnect', (reason, description) => {
+    const user = currentUsers.get(socket)
+    io.emit('user-go-out', {userName: user.userName})
+    currentUsers.delete(socket)
+  })
+
+
 });
+
 
 
 server.listen(PORT, () => {
@@ -59,5 +68,14 @@ server.listen(PORT, () => {
 type Message = {
   id: number
   message: string
-  name: string
+  userName: string
+}
+
+type GetMessage = {
+  message: string
+  userName: string
+}
+
+type User = {
+  userName: string
 }
