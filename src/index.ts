@@ -9,6 +9,7 @@ const initialMessagesData: Message[] = [{
   userName: 'Alex',
   message: 'Hello, how are you7'
 }, {id: 2, userName: 'Max', message: 'Do you watch a Harry Potter film?'}]
+
 const currentUsers = new Map()
 
 const app = express();
@@ -26,7 +27,7 @@ const io = new Server(server, {
 });
 
 app.get('/', (req: Request, res: Response) => {
-  res.send(`hello on port ${PORT}`);
+  res.send(`Hello, server websocket chat ${PORT}`);
 });
 
 io.on('connection', (socket) => {
@@ -35,15 +36,20 @@ io.on('connection', (socket) => {
 
   socket.emit('get-data', initialMessagesData)
 
-  socket.on('get-name', (data: {userName: string}) => {
+  socket.on('set-name', (data: {userName: string}) => {
     const user = currentUsers.get(socket)
     user.userName = data.userName
-    io.emit('user-go-in', {userName: data.userName});
+    socket.broadcast.emit('user-go-in', {userName: user.userName, userId: socket.id});
+  })
+
+  socket.on('start-typing-message', () => {
+    const user = currentUsers.get(socket)
+    socket.broadcast.emit('user-start-typing-message', {userName: user.userName, id: user.id});
   })
 
   socket.on('send-message', (data: GetMessage) => {
     console.log(data);
-    const message = {message: data.message, userName: data.userName, id: Date.now()}
+    const message = {message: data.message, userName: data.userName, id: Date.now(), userId: socket.id};
     initialMessagesData.push(message);
     io.emit('get-message', message)
   })
@@ -51,7 +57,7 @@ io.on('connection', (socket) => {
 
   socket.on('disconnect', (reason, description) => {
     const user = currentUsers.get(socket)
-    io.emit('user-go-out', {userName: user.userName})
+    socket.broadcast.emit('user-go-out', {userName: user.userName, userId: socket.id})
     currentUsers.delete(socket)
   })
 
